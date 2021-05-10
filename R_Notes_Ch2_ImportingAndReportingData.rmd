@@ -1,0 +1,152 @@
+SAS vs R in Data Types 
+
+R makes it very simple to read in data, while R stores all of the environmental
+and global data into memory, SAS stores the data in storage, and then calls
+when needed. 
+
+The following SAS code accomplishes viewing example data and creating a SAS df. 
+
+/*SP4R02d01*/
+
+/*Part A*/
+data sp4r.example_data;
+   length First_Name $ 25 Last_Name $ 25;
+   input First_Name $ Last_Name $ age height;
+   datalines;
+   Jordan Bakerman 27 68
+   Bruce Wayne 35 70
+   Walter White 51 70
+   Henry Hill 65 66
+   JeanClaude VanDamme 55 69
+;
+run;
+
+/*Part B*/
+data sp4r.example_data2;
+   length First_Name $ 25 Last_Name $ 25;
+   input First_Name $ Last_Name $ age height @@;
+   datalines;
+   Jordan Bakerman 27 68 Bruce Wayne 35 70 Walter White 51 70
+   Henry Hill 65 66 JeanClaude VanDamme 55 69
+   ;
+run;
+
+
+The same task in R is as follows: 
+
+```{r}
+#Data in Lists 
+First_Name <- list("Jordan", "Bruce", "Walter", "Henry", "Jean Claude")
+Last_Name <- list("Bakerman", "Wayne", "White", "Hill", "VanDamme")
+Age <- list(27, 35, 51, 65, 55)
+Height <- list(68, 70, 70, 66, 69)
+
+# Convert Lists into DF columns
+df <- data.frame(unlist(First_Name), unlist(Last_Name), unlist(Age), unlist(Height))
+
+names(df) <- c("First", "Last", "Age", "Height")
+
+cat("The Dataframe is :\n")
+print(df)
+
+```
+
+
+The next code chunk deals with reading in Data, Formatting. 
+
+If I wanted to import Data into SAS, I need to use a DATA step, as follows: 
+
+*** PAY SPECIAL ATTENTION TO THE "INFILE" syntax *** 
+
+/*SP4R02d02*/
+
+/*Import data using a DATA step*/
+data sp4r.all_names;
+   length First_Name $ 25 Last_Name $ 25;
+   infile "&path/allnames.csv" dlm=',';
+   input First_Name $ Last_Name $ age height;
+run;
+
+/***************************************************************************************************/
+/*Import data using PROC IMPORT*/
+proc import out=sp4r.baseball 
+   datafile= "&path/baseball.csv" DBMS=CSV REPLACE;
+   getnames=yes;
+   datarow=2; 
+run;
+
+/*Rename the variables*/
+data sp4r.baseball;
+   set sp4r.baseball;
+   rename nAtBat = At_Bats
+	     nHits = Hits
+	     nHome = Home_Runs
+	     nRuns = Runs
+	     nRBI = RBIs
+	     nError = Errors;
+run;
+
+/***************************************************************************************************/
+/*Creating a SAS data set from delimited data by hand*/
+data sp4r.example_data3;
+   length First_name $ 25;
+   infile datalines dlm='*';
+   input First_Name $ Last_Name $ age height;
+   datalines;
+   Jordan*Bakerman*27*68
+   Bruce*Wayne*35*70
+   Walter*White*51*70
+   Henry*Hill*65*66
+   Jean Claude*Van Damme*55*69
+;
+run;
+
+Similar code in R is fairly easy to figure out
+```{r}
+
+```
+
+formatting in SAS is where things can get tricky, 
+
+/*SP4R02d03*/
+
+data employees;
+   input name $ bday :mmddyy8. @@;
+   datalines;
+   Jill 01011960 Jack 05111988 Joe 08221975
+   ;
+run;
+
+proc print data=employees;
+run;
+
+data employees;
+   input name $ bday :mmddyy8. @@;
+   format bday mmddyy10.;
+   label name="First Name" bday="Birthday";
+   datalines;
+   Jill 01011960 Jack 05111988 Joe 08221975
+   ;
+run;
+
+proc print data=employees label;
+run;
+
+
+similar code in R: 
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,362 @@
+Chapter 4: Plotting with Random Numbers and generating useful stats
+
+In R, Generating random numbers and then plotting those numbers is very simple: 
+
+```{r}
+# Set Seed for Random Number Generation: 
+set.seed(123)
+
+# Create a dataset of random numbers
+n = 10
+random1 = cbind(rnorm(n,20,5), rbinom(n,1,.25),runif(n,0,10),rexp(n,1/5))
+
+# Add A Random Vector to the Dataset
+random2 = cbind(random1, rgeom(n,.1))
+
+# Group Random Numbers
+group = rep(1:5, each = 3)
+n = length(group)
+random3 = cbind(group,1:n,rpois(n,25), rbeta(n,.5,.5))
+
+# Find Density, CDF, and Quartile Range of Distributions: 
+
+q = seq(-3,3, by=0.5)
+d = dnorm(q,0,1)
+p = pnorm(q,0,1)
+
+random4 = cbind(q,d,p,qnorm(p,0,1))
+
+print(random1)
+print(random2)
+print(random3)
+print(random4)
+
+```
+
+In SAS, we need to use a "do loop" (creating sequence, repetitive values, groups)
+The do loop is equivalent to seed function in R, and is also a for loop 
+
+All of this is done inside a DATA step. 
+
+/*SP4R04d01*/
+
+/*Part A*/
+data sp4r.random (drop=i);
+   call streaminit(123);
+   do i=1 to 10;
+      rnorm = rand('Normal',20,5);
+      rbinom = rand('Binomial',.25,1);
+      runif = rand('Uniform')*10;
+      rexp = rand('Exponential')*5;
+      output;
+   end;
+run;
+
+proc print data=sp4r.random;
+run;
+
+/*Part B*/
+data sp4r.random;
+   call streaminit(123);
+   set sp4r.random;
+   rgeom = rand('Geometric',.1);
+run;
+
+proc print data=sp4r.random;
+run;
+
+/*Part C*/
+data sp4r.doloop (drop=j);
+   call streaminit(123);
+   do group=1 to 5;
+      do j=1 to 3;
+         rpois = rand('Poisson',25);
+         rbeta = rand('Beta',.5,.5);
+         seq+1;
+         output;
+      end;
+   end;
+run;
+
+proc print data=sp4r.doloop;
+run;
+
+/*#Part D*/
+data sp4r.quants;
+   do q=-3 to 3 by .5;
+      pdf = pdf('Normal',q,0,1);
+      cdf = cdf('Normal',q,0,1);
+      quantile = quantile('Normal',cdf,0,1);
+      output;
+   end;
+run;
+
+proc print data=sp4r.quants;
+run;
+
+*Plotting* 
+
+Now we move to plotting in SAS vs R. 
+
+The following R chunk will produce a histogram with a denisty estimate, 
+a Boxplot
+a Bar Chart 
+A Scatterplot 
+"Enhance the plots" 
+
+```{r echo = TRUE}
+# Create a histogram with desnity estimate 
+n = 300; vec = rexp(n,1/10); s = rep(1:3, each = 100)
+hist(vec, 50, freq = F)
+lines(density(vec), col = "red")
+
+# Create a boxplot
+boxplot(vec~s, horizontal = T)
+
+# Create bar chart
+n = 12; vec = rnorm(12, 10000, 5000)
+barplot(vec)
+
+# Create scatter plot
+x = 1:30; y1 = 10+x+rnorm(30); y2 = 35+x/2+rnorm(30)
+plot(y1~x, ylim=c(10,50)); abline(lm(y1~x))
+points(y2~x); abline(lm(y2~x))
+
+# Enhance the plot
+x = 1:12
+revenue = rnorm(12,10000,1000)
+revenue_2 = rnorm(12,13000,500)
+plot(revenue~x, type = "b", col = "blue", ylim = c(8000,14000),
+     main = "Monthly sale of Company A and B for 2015",
+     xlab = "Month", ylab = "Revenue for 2015",
+     pch=16, lty=2)
+
+lines(revenue_2~x, type = "b", col = "red", pch = 16, lty = 2)
+text(10,8000, "Shiva P")
+abline(h=11000, col="grey"); abline(v=6.5, col="grey")
+legend(2,9500, c("A","B"),col=c("blue","red"),lty = c(2,2))
+```
+
+in SAS, all of the plotting is through the "SG PLOT" procedure (PROC SGPLOT)
+
+   Check out Doc Page
+
+
+/*SP4R04s04*/
+
+/*Part A*/
+data sp4r.simple_lin (keep=x y);
+   call streaminit(123);
+   do x=1 to 30;
+      beta01 = 25;
+      beta11 = 1;
+      y = beta01 + beta11*x + rand('Normal',0,5);
+      output;
+   end;
+run;
+
+/*Part B*/
+proc sgplot data=sp4r.simple_lin;
+   scatter x=x y=y / legendlabel='Scatter' name='Scatter' 
+      markerattrs=(color=blue symbol=starfilled);
+   reg x=x y=y / legendlabel='Line of Best Fit' name='Line'
+      lineattrs=(color=red pattern=dot);
+
+   title 'My Scatter Plot';
+   xaxis label='X Values' min=0 max=31;
+   yaxis label='Y Values' min=15 max=65;
+   keylegend 'Scatter' 'Line';
+run;
+title;
+
+/*Part C*/
+proc sgplot data=sp4r.simple_lin;
+   needle x=x y=y / legendlabel='Needle' name='Needle' markerattrs=(color=blue symbol=starfilled);
+   pbspline x=x y=y / legendlabel='Line of Best Fit' name='Line'
+      lineattrs=(color=red pattern=dot);
+
+   title 'My Needle Plot';
+   xaxis label='X Values' min=0 max=31;
+   yaxis label='Y Values' min=15 max=65;
+   keylegend 'Needle' 'Line';
+run;
+title;
+
+
+
+*Multi-Cell Plotting Procs* 
+
+in R, Creating a matrix of scatters, multiple view plots based on shared variable
+the following code is used: 
+
+```{r}
+n = 1000
+x = rexp(n)
+y = rnorm(n,3,1)
+z = rchisq(n,10)
+pairs(~x+y+z)
+# Create Side by Side Histograms: 
+n = 1000
+fem = rnorm(n,66,2)
+mal = rnorm(n,72,2)
+par(mfrow = c(1,2))
+
+hist(fem, 50, main="Histogram of Female Heights")
+hist(mal, 50, main = "Histogram of Male Heights")
+
+# Create a window with Multiple Plots
+n = 1000
+fem = rnorm(n,66,2)
+par(mfrow = c(1,3))
+hist(fem,50,main = "Histogram of Female Heights")
+plot(density(fem), main = "Density Estimate of Female Heights")
+boxplot(fem,main= "boxplot of Female Heights")
+
+```
+
+To reproduce these in SAS; 
+
+/*SP4R04s06*/
+
+/*Part A*/
+data sp4r.random;
+   call streaminit(123);
+   do i=1 to 300;
+      x = rand('Normal');
+      y1 = x + rand('Normal');
+      y2 = 5*x + rand('Normal');
+      output;
+   end;
+run;
+
+/*Part B*/
+proc sgscatter data=sp4r.random;
+   matrix x y1 y2 / diagonal=(histogram kernel);
+   title 'Scatter Plot Matrix';
+run;
+title;
+
+/*Part C*/
+proc sgscatter data=sp4r.random;
+   plot (y1 y2) * x / reg;
+   title 'Scatter Plots';
+run;
+title;
+
+/*Part D*/
+proc sgscatter;
+   compare y=(y1 y2) x=x / reg;
+   title 'Scatter Plots';
+run;
+title;
+
+Alternatively: 
+
+/*SP4R04d04*/
+
+/*Part A*/
+data sp4r.multi;
+   call streaminit(123);
+   do Sex='F', 'M';
+      do j=1 to 1000;
+         if sex='F' then height = rand('Normal',66,2);
+         else height = rand('Normal',72,2);
+         output;
+      end;
+   end;
+run;
+
+/*Part B*/
+proc sgpanel data=sp4r.multi;
+   panelby sex;
+   histogram height;
+   density height / type=normal;
+   title 'Heights of Males and Females';
+   colaxis label='Height';
+run;
+title;
+
+/*Part C*/
+ods layout Start rows=1 columns=3 row_height=(1in) column_gutter=0;
+
+ods region row=1 column=1;
+proc sgplot data=sp4r.multi (where= (sex='F'));
+   histogram height / binwidth=.5;
+   title 'Histogram of Female Heights';
+run;
+title;
+
+ods region row=1 column=2;
+proc sgplot data=sp4r.multi (where= (sex='F'));
+   density height / type=kernel;
+   title 'Density Estimate of Female Heights';
+run;
+title;
+
+ods region row=1 column=3;
+proc sgplot data=sp4r.multi (where= (sex='F'));
+   hbox height;
+   title 'Boxplot of Female Hieghts';
+run;
+title;
+
+ods layout end;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

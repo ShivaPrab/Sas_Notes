@@ -1,0 +1,34 @@
+Chapter 1: Calling R from SAS; 
+
+The purpose of this file is to house notes from SAS's 
+"SAS Programming for R Users" course. 
+
+The syntax of R and SAS vary slightly, and this course aims to point out the 
+relevant differences, show how tasks can be accomplished using both programming
+tools, and show how SAS and R can complement eachother. 
+
+Note, this course also introduces SQL concepts in course around chapter 3. 
+
+The below code chunk (SAS) shows how we can call R from SAS
+
+```{r echo = TRUE}
+#SAS CODE
+# PROC iml; 
+#   call ExportDataSetToR("Work.Birth","Birth");
+# 
+      submit / r;
+        library(randomForest)
+      rf = randomForest(BWT ~ SMOKE + HT + LWT + PTW, data= birth
+                                                    , ntree =200
+                                                    , importance = 1)
+      summary(rf)
+      actual = birth$BWT
+      pred = predict(rf, data=birth)
+      actual.pred = cbind(actual,pred)
+      colnames(actual.pred) <- c("Actual", "Predicted")
+#   endsubmit;
+# 
+# call ImportDataSetFromR("Rdata", "actual.pred");
+# quit; 
+```
+
