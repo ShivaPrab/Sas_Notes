@@ -1,0 +1,203 @@
+CH 7: Interactive Matrix Language (ML)
+
+R is a Matrix language, and it is important to know how to use matrices and 
+translate our R understanding into SAS programming. This chapter should focus
+on highlighting the basics of Matrix understanding, how to work with Modules and 
+subroutines, calling SAS Data Sets and Procedures and finally simulating results
+
+in R, we use the following code to create a matrix and conduct operations. 
+
+```{r}
+# Create Matrix 
+x = matrix(c(1,2,3,4),nrow = 2,ncol = 2,byrow = T)
+y = matrix(c(5,6,7,8),nrow = 2,ncol = 2,byrow = T)
+
+# Element wise Operations
+x ^ 2
+x * y 
+
+# Matrix Operations 
+x %% y 
+
+# Accessing Elements 
+x[1,]
+y[1,1:2]
+
+# Reduction 
+max(x)
+sum(x)
+colMeans(x)
+
+
+```
+
+
+PROC IML;
+  IML syntax
+QUIT; 
+
+
+in SAS:
+{} Making a Matrix from Literal Values; 
+[] Referring to Matrix Subscripts, specifying options; 
+() Controlling Order of Operations, Functions 
+
+Creating a Module: 
+
+```{r}
+
+# function.name = function(arg1, arg2,...){
+#  statements
+#  return(arguments)
+# }
+#
+#
+#
+
+```
+
+in SAS, the syntax is as follows: 
+
+START name <(argument1, argument2,...)>
+  <GLOBAL(arguement1, arguement2,...)>;
+  statements;
+  <RETURN(matrix);>
+FINISH; 
+
+
+PROC IML;
+	start standarize(x);
+		n=nrow(x);
+		mean=x[:,];
+		xbar=repeat(mean,n,1);
+		x=x-xbar;
+		stdv=std(x);
+		x=x/stdv;
+		return(x);
+	finish;
+	
+	n = 10;
+	call randseed(800);
+	mymat = randfun(n, "Normal", 5,5)
+		 || randfun(n,"Uniform", 10,15)
+		 || randfun(n, "Exponential", 7);
+	print mymat;
+	stand = standardize(mymat); 
+	print(stand);
+quit; 
+
+PROC IML;
+	start standsub(stand, mean, stdv, x);	
+		n=nrow(x);
+		mean=x[:,];
+		xbar=repeat(mean,n,1);
+		x=x-xbar;
+		stdv=std(x);
+		stand=x/stdv;
+	finish;
+	
+	n = 10; 
+	call randseed(800);
+	mymat = randfun(n, "Normal", 5,5)
+		 || randfun(n,"Uniform", 10,15)
+		 || randfun(n, "Exponential", 7);
+	call standsub(standardized,m,s,mymat);
+	print m,s,standardized;
+quit; 
+
+
+Simulations: 
+
+1.) Obtain Solutions 
+2.) Evaluate Methods
+
+```{r}
+# Sample Distribution 
+SimpleReg = function(n){
+  
+  beta0 = 5
+  beta1 = 2
+  xvals = runif(n)*n
+  error = rnorm(n, mean = 0, sd = 5)
+  y = beta0 + beta1*xvals + error
+  
+  x = cbind(rep(1,n), xvals)
+  beta = solve(t(x) %*% x, t(x) %*% y)
+  return(beta[2])
+}
+
+#simulate
+reps = 1000000
+samp = rep(0, reps)
+for(i in 1:reps){
+  samp[i] = SimpleReg(20)
+}
+
+#Analyze
+hist(samp,50)
+mean(samp)
+sd(samp)
+
+```
+
+
+
+
+Monty Hall Simluation in SAS; 
+
+/*SP4R07d06*/
+
+/*Part A*/
+proc iml;
+   numberIterations=10000;
+   call randseed(802);
+
+/*Part B*/
+   do iteration=1 to numberIterations;
+      doors = {1 2 3};
+      carDoor=sample(doors,1);
+
+/*Part C*/
+     *Pick door for Monty Hall to open;
+     if carDoor=1 then openDoor=randfun(1,"Bernoulli",.5) + 2;
+     else if carDoor=2 then openDoor=3;
+     else if carDoor=3 then openDoor=2;
+
+/*Part D*/
+     *Determine door for switching strategy;
+     if openDoor=2 then switchDoor=3;
+     else if openDoor=3 then switchDoor=2;
+
+/*Part E*/
+     *Determine which strategy wins;
+     if carDoor=1 then stayWin=1;
+     else stayWin=0;
+
+     if carDoor=switchDoor then switchWin=1;
+     else switchWin=0;
+	 /*switchWin=carDoor=switchDoor;*/
+
+/*Part F*/
+     *Collect results to a single matrix;
+     results=results // (iteration || carDoor || openDoor || stayWin || switchWin);
+   end;
+
+/*Part H*/
+   reset noname;
+   resultsSubset = results[1:10,];
+   print resultsSubset [colname={iteration carDoor openDoor 
+      stayWin switchWin}];
+
+   percentageWins=results[:,{4 5}];
+   print percentageWins [colname={stay switch}];
+quit;
+
+
+
+
+
+
+
+
+
+

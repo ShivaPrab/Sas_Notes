@@ -1,0 +1,78 @@
+Chapter 6: Analyzing Data with Inferential Procedures 
+
+- Use PROC REG to create regression and polynomial models; 
+- Use PROC GLM to create ANOVA and ANCOVA model; 
+- Use PROC GLMSELECT to perform effect selection; 
+- Use PROC LOGISTIC to create logistical regression models; 
+- Use PROC GENMOD to create generalized linear models with a link other than 
+the logit link; 
+- Use PROC MIXED to create new two-way interaction mixed models; 
+- List and Describe the procedures that you can use for additional types of stat analyses 
+
+
+```{r}
+# Regression- Linear
+mylm = lm(amesbyyear$SalePrice ~ amesbyyear$Gr_Liv_Area + amesbyyear$Age_Sold)
+mylm; summary(mylm); anova(mylm)
+par(mfrow=c(2,2)); plot(mylm)
+
+# Polynomial: 
+x2 = x^2; x3 = x^3; x4 = x^4; x5 = x^5
+mylm = lm(y~x + x2 + x3 + x4 + x5)
+mylm; summary(mylm); anova(mylm)
+par(mfrow=c(2,2)); plot(mylm)
+
+# ANOVA 
+mylm = lm(SalePrice ~ as.factor(Heating_QC))
+mylm; anova(mylm); summary(lm)
+par(mfrow=c(2,2)); plot(mylm)
+
+# ANCOVA 
+mylm - lm(SalePrice ~ as.factor(Heating_QC) + Gr_Liv_Area
+            + as.factor(Heating_QC)*Gr_Liv_Area)
+mylm; anova(mylm); summary(mylm)
+par(mfrow=c(2,2))
+plot(mylm)
+
+```
+
+To Create the same in SAS, 
+
+The code chunks follows this formatting: 
+
+PROC REG DATA = "data-set-name";
+  MODEL "dependent variable = regressors </options>;
+RUN; QUIT; 
+
+
+Two-Way Mixed Models: 
+
+/*SP4R06d09*/
+
+/*Part A*/
+proc sgplot data=sp4r.grass;
+   vline variety / group=method stat=mean response=yield;
+run;
+
+/*Part B*/
+proc mixed data=sp4r.grass method=REML;
+   class method variety;
+   model yield = method / solution ddfm=kr2;
+   random variety method*variety;
+   lsmeans method / pdiff;
+   estimate 'A vs. B and C' method 1 -.5 -.5;
+run;
+
+/*Part C*/
+ods select type3;
+proc mixed data=sp4r.grass method=type3;
+   class method variety;
+   model yield = method / solution ddfm=kr2;
+   random variety method*variety;
+   lsmeans method / pdiff;
+   estimate 'A vs. B and C' method 1 -.5 -.5;
+run;
+
+
+
+
